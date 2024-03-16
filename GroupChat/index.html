@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="index.css">
+    
+
+
+</head>
+<body>
+
+    
+    <p id="greetingElement" class="greeting"></p>
+    <button type="Logout" onclick="logout()">Logout</button>
+    <p class="person_info_link">If you want to change your Info or unregistered your account, <a href="modify_delete.html">click here</a></p>
+    <div class="talk_con">
+            <div class="talk_show" id="words"></div>
+            <div class="talk_input">
+                <input type="text" class="talk_word" id="talkwords" onkeydown="if(event.keyCode==13) {talksub.click()}" />
+                <input type="button" value="Send" class="talk_sub" id="talksub">
+            </div>  
+            
+    </div>
+
+    <script type="text/javascript">      
+        // 
+
+            var ID = window.localStorage.getItem('user');
+            
+            console.log(name)
+            if (ID == null){
+                window.location.href = "login.html";
+            }
+            else{
+
+                var greeting = "Welcome back, " + window.localStorage.getItem('name') + "!";
+            }
+            document.getElementById('greetingElement').textContent = greeting;
+
+            window.onload = function(){
+
+                var Words = document.getElementById("words");
+                var Who = document.getElementById("who");
+                var TalkWords = document.getElementById("talkwords");
+                var TalkSub = document.getElementById("talksub");
+                
+                //====================Get data (ALL data)=======================
+                let data
+                axios({
+                    method: `get`, // http GET
+                    url: `http://54.215.32.190:5000/users.json` 
+                })
+                    .then(function (response) {
+                        data = response.data
+                        
+                    }).catch(function (error) {
+                    console.log(error);
+                });
+
+                // =========================Show message==============================
+                axios({
+                    method: `get`, // http GET
+                    url: `http://54.215.32.190:5000/users.json/message` 
+                })
+                    .then(function (response) { 
+                        messages = response.data
+                        Words.innerHTML = showMessage(messages);
+                    }).catch(function (error) {
+                    console.log(error);
+                });
+
+                //===========================Update data in real time================
+                var ws = new WebSocket("ws://54.215.32.190:5678/");
+                ws.onmessage = function (response) {
+                    messages = JSON.parse(response.data)
+                    Words.innerHTML = showMessage(messages);
+                };
+
+
+                //=====================Get the UTC time============================
+                function Clock() {
+                    var date = new Date().getTime();
+                    console.log(date)
+                    return (date)
+                }
+
+
+                //=======================Clicl the send bottom=============================
+                TalkSub.onclick = function(){
+
+                    //Determine whether to log in
+                    if(ID == null){
+                        alert("Plase login");
+                        return;
+                    }
+
+                    //Get the username of the person who sent the message
+                    var user = "";
+                    for(var i = 0;i<data.length;i++){
+                            if(ID==data[i]._id){
+                                user = data[i].name
+                        }
+                    }
+
+                    // Add message
+                    var str = "";
+                    if(TalkWords.value == ""){
+                        alert("Message cannot be empty");
+                        return;
+                    }
+                    str = '<div class="Italk"><span>' + TalkWords.value +'</span><a>:me</a></div>' ;  
+                    Words.innerHTML = Words.innerHTML + str;
+
+                    //Updata the message into the DB
+                    axios({
+                        method: `post`, // http POST
+                        url: `http://54.215.32.190:5000/users.json/message?`+`_id=`+ID,
+                        data: {
+                            _id : ID,
+                            time: Clock(),
+                            content: TalkWords.value,
+                            from : user
+                        }
+                    })
+                        .then(function (response) { 
+                            console.log(response.data);
+                            
+                        }).catch(function (error) {
+                        console.log(error);
+                        });
+
+
+
+                    //clear the input    
+                    TalkWords.value = ''
+                }  
+            }
+            
+            //Show message from json response
+            function showMessage(messages){
+                total_messages = ''
+                    for(var i = 0;i<messages.length;i++){
+                        if(messages[i]._id == ID){
+                            str = '<div class="Italk"><span>' + messages[i].content +'</span><a>:me</a></div>' ;  
+                        }
+                        else{
+                            str = '<div class="atalk"><a>'+messages[i].from+':</a><span>' + messages[i].content +'</span></div>';
+                        }
+                        total_messages = total_messages + str;
+                    }
+                return total_messages;
+            }
+
+
+            function logout(){
+                window.localStorage.removeItem('user')
+                window.localStorage.removeItem('name')
+                location.reload();  
+            }
+
+        </script>
+
+
+</head>
+</html>

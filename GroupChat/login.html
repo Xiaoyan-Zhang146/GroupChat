@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Login Page</title>
+  <style>
+    /* Center the form on the page */
+    
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #f2f2f2;
+    }
+
+    /* Style the form */
+    form {
+      width: 350px;
+      padding: 50px;
+      background-color: #fff;
+      border-radius: 5px;
+      text-align: center;
+      box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Style the form inputs and labels */
+    label,#Email, #passwordLine{
+      display: block;
+      margin-bottom: 10px;
+      text-align: left;
+      width: 100%;
+      padding: 4px;
+    }
+
+    #password{
+      display: inline-block;
+      width: 87%;
+      padding: 4px;
+    }
+
+    #Icon{
+      display: inline-block;
+      width: 8%;
+    }
+    
+    /* Style the form submit button */
+    button[type="submit"] {
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      margin-top: 10px;
+      border-radius: 5px;
+    }
+  </style>
+  </head>
+  <link href="https://cdn.materialdesignicons.com/6.5.95/css/materialdesignicons.min.css" rel="stylesheet">
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+<body>
+    <form id="loginForm">
+    <div class="talk_con">
+        <!-- Login Form -->
+        <div class="login_form">
+            <h1>Login</h1>
+            <!-- Login form fields go here -->
+            <input type="text" placeholder="Email" class="login_input", id="Email">
+            <div id="passwordLine">
+              <input type="password" placeholder="Password" class="login_input", id="password">
+              <button type="button" onclick="showHidePassword()", id = 'Icon'><i class="mdi mdi-eye"></i></button>
+            </div>
+            <button type="submit" class="login_button">Login</button>
+
+            <!-- Sign up link -->
+            <p class="signup_link">Don't have an account? <a href="signup.html">Sign up</a></p>
+        </div>
+    </div>
+    </form>
+
+</body>
+</html>
+
+<script>
+
+  document.getElementById('loginForm').addEventListener('submit', function(event) {
+    event.preventDefault(); 
+    const email = document.getElementById('Email').value;
+    const password = document.getElementById('password').value;
+    axios.get(`http://54.215.32.190:5000/users.json/login?email=`+email+`&password=`+password)
+    .then(function (response) {
+      const users = response.data;
+      console.log(users) 
+      if (users["state"] === true) { 
+          window.localStorage.setItem('user',users['_id']);
+
+          axios({
+                method: `get`, // http GET
+                url: `http://54.215.32.190:5000/users.json?orderBy="_id"&equalTo="`+users['_id']+`"` 
+            })
+                .then(function (response) {
+                    data = response.data[0]
+                    console.log(data)
+                    userName = data.name
+                    window.localStorage.setItem('name',userName);
+                    location.href = 'index.html' 
+                }).catch(function (error) {
+                    console.log(error);
+                });
+          console.log(window.localStorage.getItem('name'))
+          
+        }
+
+      else{
+          alert('Invalid email or password. Please try again.');
+        }
+    })
+    .catch(function (error) {
+      console.log(error);
+    });
+  });
+</script>
+<script>
+  function showHidePassword() {
+    var passwordInput = document.getElementById("password");
+    var buttonIcon = document.querySelector("#password + button i");
+    if(passwordInput.type === "password") {
+      passwordInput.type = "text";
+      buttonIcon.classList.remove("mdi-eye");
+      buttonIcon.classList.add("mdi-eye-off");
+    } else {
+      passwordInput.type = "password";
+      buttonIcon.classList.remove("mdi-eye-off");
+      buttonIcon.classList.add("mdi-eye");
+    }
+  }
+</script>
